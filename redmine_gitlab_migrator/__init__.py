@@ -35,8 +35,10 @@ class APIClient:
         kwargs = self.add_auth_headers(kwargs)
         resp = func(*args, **kwargs)
         resp.raise_for_status()
-        ret = resp.json()
-        log.debug('HTTP RESPONSE {}'.format(ret))
+        ret = None
+        if func != requests.delete
+            ret = resp.json()
+            log.debug('HTTP RESPONSE {}'.format(ret))
         return ret
 
     def get(self, *args, **kwargs):
