@@ -68,35 +68,20 @@ class GitlabProject(Project):
         super().__init__(*args, **kwargs)
         self.group_id = None
 
-        self.instance_url = '{}/api/v3'.format(
+        self.instance_url = '{}/api/v4'.format(
             self._url_match.group('base_url'))
 
-        # fetch project_id via api, thanks to lewicki-pk
-        # https://github.com/oasiswork/redmine-gitlab-migrator/pull/2
-        # but also take int account, that there might be the same project in different namespaces
-        path_with_namespace = (
-            '{namespace}/{project_name}'.format(
-                **self._url_match.groupdict()))
-        projectId = -1
-        groupId = None
-
-        projects_info = self.api.get('{}/projects'.format(self.instance_url))
-
-        for project_attributes in projects_info:
-            if project_attributes.get('path_with_namespace') == path_with_namespace:
-                projectId = project_attributes.get('id')
-                if project_attributes.get('namespace').get('kind') == 'group':
-                    groupId = project_attributes.get('namespace').get('id')
-
-        self.project_id = projectId
-        if projectId == -1 :
-            raise ValueError('Could not get project_id for path_with_namespace: {}'.format(path_with_namespace))
-        if groupId:
-            self.group_id = groupId
+        project_info = self.api.get('{base_url}api/v4/projects/{namespace}%2F{project_name}'.format(
+            **self._url_match.groupdict()))
+        
+        self.project_id = project_info['id']
+        
+        if project_info['namespace']['kind'] == 'group':
+            self.group_id = project_info['namespace']['id']
 
         self.api_url = (
-            '{base_url}api/v3/projects/'.format(
-                **self._url_match.groupdict())) + str(projectId)
+            '{base_url}api/v4/projects/'.format(
+                **self._url_match.groupdict())) + str(self.project_id)
 
 
     def is_repository_empty(self):
@@ -157,7 +142,7 @@ class GitlabProject(Project):
         issue = self.api.post(
             issues_url, data=data, headers=headers)
 
-        issue_url = '{}/{}'.format(issues_url, issue['id'])
+        issue_url = '{}/{}'.format(issues_url, issue['iid'])
 
         # Handle issues notes
         issue_notes_url = '{}/notes'.format(issue_url, 'notes')
